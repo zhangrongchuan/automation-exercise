@@ -50,18 +50,22 @@ jobs:
       - name: Run tests with coverage (must create .coverage)
         run: |
           set -euo pipefail
+      
+          export COVERAGE_FILE="${GITHUB_WORKSPACE}/.coverage"
+      
           echo "Workspace: ${GITHUB_WORKSPACE}"
           pwd
           ls -la
-
+      
           python -m coverage run --source=. -m pytest -q
-
+      
           echo "Searching for .coverage under workspace..."
           find "${GITHUB_WORKSPACE}" -maxdepth 3 -name ".coverage" -print
-
+      
           echo "Fail if .coverage is missing in repo root:"
           test -f "${GITHUB_WORKSPACE}/.coverage"
           ls -la "${GITHUB_WORKSPACE}/.coverage"
+
 
       - name: Upload coverage artifact (.coverage)
         uses: actions/upload-artifact@v4
