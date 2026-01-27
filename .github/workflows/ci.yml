@@ -9,16 +9,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
       - name: Install black
         run: |
           python -m pip install --upgrade pip
           pip install black
-
       - name: Black check
         run: black --check .
 
@@ -28,7 +25,6 @@ jobs:
     needs: style_check
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -37,9 +33,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --upgrade pip
-          # project deps
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          # tools for CI
           pip install pytest coverage
 
       - name: Run tests with coverage and materialize .coverage in repo root
@@ -51,22 +45,23 @@ jobs:
           pwd
           ls -la
 
-          # run coverage
           python -m coverage run --source=. -m pytest
 
-          # locate .coverage anywhere reasonable, then force copy to repo root
           echo "Finding .coverage..."
           COV_PATH="$(find "$GITHUB_WORKSPACE" "$HOME" -maxdepth 4 -name ".coverage" -type f 2>/dev/null | head -n 1 || true)"
           echo "COV_PATH=$COV_PATH"
 
           if [ -z "$COV_PATH" ]; then
-            echo "ERROR: .coverage not found anywhere. Dump some dirs for debugging:"
-            ls -la "$GITHUB_WORKSPACE" || true
-            ls -la "$HOME" || true
+            echo "ERROR: .coverage not found anywhere"
             exit 1
           fi
 
-          cp "$COV_PATH" "$GITHUB_WORKSPACE/.coverage"
+          if [ "$COV_PATH" != "$GITHUB_WORKSPACE/.coverage" ]; then
+            cp "$COV_PATH" "$GITHUB_WORKSPACE/.coverage"
+          else
+            echo ".coverage already in repo root, no need to copy"
+          fi
+
           ls -la "$GITHUB_WORKSPACE/.coverage"
 
       - name: Upload coverage artifact (.coverage)
@@ -83,7 +78,6 @@ jobs:
     needs: test
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -103,8 +97,8 @@ jobs:
         run: |
           set -euo pipefail
           ls -la coverage_artifact
-          cp coverage_artifact/.coverage "${GITHUB_WORKSPACE}/.coverage"
-          ls -la "${GITHUB_WORKSPACE}/.coverage"
+          cp coverage_artifact/.coverage "$GITHUB_WORKSPACE/.coverage"
+          ls -la "$GITHUB_WORKSPACE/.coverage"
 
       - name: Generate coverage report and XML
         run: |
