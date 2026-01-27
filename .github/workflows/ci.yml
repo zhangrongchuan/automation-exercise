@@ -8,11 +8,9 @@ jobs:
     name: style_check
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -22,19 +20,16 @@ jobs:
           pip install black
 
       - name: Black check
-        run: |
-          black --check .
+        run: black --check .
 
   test:
     name: test
     runs-on: ubuntu-latest
     needs: style_check
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -44,28 +39,35 @@ jobs:
           python -m pip install --upgrade pip
           # project deps
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          # ensure CI tools exist
+          # tools for CI
           pip install pytest coverage
 
-      - name: Run tests with coverage (must create .coverage)
+      - name: Run tests with coverage and materialize .coverage in repo root
         run: |
           set -euo pipefail
-      
-          export COVERAGE_FILE="${GITHUB_WORKSPACE}/.coverage"
-      
-          echo "Workspace: ${GITHUB_WORKSPACE}"
+
+          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
+          echo "HOME=$HOME"
           pwd
           ls -la
-      
-          python -m coverage run --source=. -m pytest -q
-      
-          echo "Searching for .coverage under workspace..."
-          find "${GITHUB_WORKSPACE}" -maxdepth 3 -name ".coverage" -print
-      
-          echo "Fail if .coverage is missing in repo root:"
-          test -f "${GITHUB_WORKSPACE}/.coverage"
-          ls -la "${GITHUB_WORKSPACE}/.coverage"
 
+          # run coverage
+          python -m coverage run --source=. -m pytest
+
+          # locate .coverage anywhere reasonable, then force copy to repo root
+          echo "Finding .coverage..."
+          COV_PATH="$(find "$GITHUB_WORKSPACE" "$HOME" -maxdepth 4 -name ".coverage" -type f 2>/dev/null | head -n 1 || true)"
+          echo "COV_PATH=$COV_PATH"
+
+          if [ -z "$COV_PATH" ]; then
+            echo "ERROR: .coverage not found anywhere. Dump some dirs for debugging:"
+            ls -la "$GITHUB_WORKSPACE" || true
+            ls -la "$HOME" || true
+            exit 1
+          fi
+
+          cp "$COV_PATH" "$GITHUB_WORKSPACE/.coverage"
+          ls -la "$GITHUB_WORKSPACE/.coverage"
 
       - name: Upload coverage artifact (.coverage)
         uses: actions/upload-artifact@v4
@@ -80,17 +82,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Install coverage
         run: |
-          set -euo pipefail
           python -m pip install --upgrade pip
           pip install coverage
 
@@ -100,7 +99,7 @@ jobs:
           name: coverage-data
           path: coverage_artifact
 
-      - name: Restore .coverage to workspace root
+      - name: Restore .coverage to repo root
         run: |
           set -euo pipefail
           ls -la coverage_artifact
