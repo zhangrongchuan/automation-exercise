@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtualenv
+.venv/
+venv/
+
+# Coverage artifacts (local run)
+.coverage
+coverage.xml
+htmlcov/
+.coverage.*
