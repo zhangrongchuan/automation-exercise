@@ -31,15 +31,14 @@ jobs:
 
       - name: Install dependencies
         run: |
-          set -euo pipefail
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          pip install pytest coverage
+          pip install pytest pytest-cov coverage
 
       - name: Run tests with coverage
         run: |
-          python -m coverage run --source=. -m pytest
-          python -m coverage report
+          pytest --cov=. --cov-report=term
+          ls -la
           ls -la .coverage
 
       - name: Upload coverage artifact (.coverage)
