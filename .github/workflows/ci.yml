@@ -36,39 +36,17 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install pytest coverage
 
-      - name: Run tests with coverage and materialize .coverage in repo root
+      - name: Run tests with coverage
         run: |
-          set -euo pipefail
-
-          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
-          echo "HOME=$HOME"
-          pwd
-          ls -la
-
           python -m coverage run --source=. -m pytest
-
-          echo "Finding .coverage..."
-          COV_PATH="$(find "$GITHUB_WORKSPACE" "$HOME" -maxdepth 4 -name ".coverage" -type f 2>/dev/null | head -n 1 || true)"
-          echo "COV_PATH=$COV_PATH"
-
-          if [ -z "$COV_PATH" ]; then
-            echo "ERROR: .coverage not found anywhere"
-            exit 1
-          fi
-
-          if [ "$COV_PATH" != "$GITHUB_WORKSPACE/.coverage" ]; then
-            cp "$COV_PATH" "$GITHUB_WORKSPACE/.coverage"
-          else
-            echo ".coverage already in repo root, no need to copy"
-          fi
-
-          ls -la "$GITHUB_WORKSPACE/.coverage"
+          python -m coverage report
+          ls -la .coverage
 
       - name: Upload coverage artifact (.coverage)
         uses: actions/upload-artifact@v4
         with:
           name: coverage-data
-          path: ${{ github.workspace }}/.coverage
+          path: .coverage
           if-no-files-found: error
           retention-days: 1
 
@@ -91,21 +69,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: coverage-data
-          path: coverage_artifact
-
-      - name: Restore .coverage to repo root
-        run: |
-          set -euo pipefail
-          ls -la coverage_artifact
-          cp coverage_artifact/.coverage "$GITHUB_WORKSPACE/.coverage"
-          ls -la "$GITHUB_WORKSPACE/.coverage"
+          path: .
 
       - name: Generate coverage report and XML
         run: |
-          set -euo pipefail
+          ls -la .coverage
           coverage report
           coverage xml
-          ls -la coverage.xml
 
       - name: Upload coverage XML (coverage.xml)
         uses: actions/upload-artifact@v4
