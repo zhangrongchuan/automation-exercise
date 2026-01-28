@@ -37,7 +37,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pytest --cov=. --cov-report=term
+          PYTHONPATH=$GITHUB_WORKSPACE pytest --cov=. --cov-report=term
           ls -la
           ls -la .coverage
 
